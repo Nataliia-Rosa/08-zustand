@@ -1,17 +1,16 @@
+import type { Metadata } from "next";
 import NoteForm from "@/components/NoteForm/NoteForm";
-import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Create Note Page",
-  description: "Here you can create new Note.",
+  title: "Create Note",
+  description: "Create a new note",
   openGraph: {
-    title: "Create Note Page",
-    description: "Here you can create new Note.",
-    url: `${process.env.NEXT_APP_URL}/notes/action/create`,
+    title: "Create Note",
+    description: "Create a new note",
+    url: "https://example.com/notes/action/create",
     images: [
       {
-        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-        alt: "Notehub - A Note-Taking App",
+        url: "https://example.com/og-image.jpg",
       },
     ],
   },
@@ -20,11 +19,8 @@ export const metadata: Metadata = {
 export default function CreateNotePage() {
   return (
     <main>
-      <div>
-        <h1>Create note</h1>
-        {}
-        <NoteForm />
-      </div>
+      <h1>Create Note</h1>
+      <NoteForm />
     </main>
   );
 }
