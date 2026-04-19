@@ -1,40 +1,46 @@
-import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Roboto } from 'next/font/google'
+import Footer from '@/components/Footer/Footer'
+import Header from '@/components/Header/Header'
+import TanStackProvider from '@/components/TanStackProvider/TanStackProvider'
+import './globals.css'
 
 const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  display: "swap",
-  variable: "--font-roboto",
-});
+  weight: ['400', '500', '700'],
+  variable: '--font-roboto',
+  display: 'swap',
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
-  title: "Notes App",
-  description: "Create and manage your notes easily",
+  title: 'NoteHub',
+  description:
+    'NoteHub is an application for creating, browsing, and managing personal notes.',
   openGraph: {
-    title: "Notes App",
-    description: "Create and manage your notes easily",
-    url: "https://example.com/",
-    images: [
-      {
-        url: "https://example.com/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Notes App",
-      },
-    ],
+    title: 'NoteHub',
+    description:
+      'NoteHub is an application for creating, browsing, and managing personal notes.',
+    url: '/',
+    images: ['https://ac.goit.global/fullstack/react/notehub-og-meta.jpg'],
   },
-};
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+interface RootLayoutProps {
+  children: React.ReactNode
+  modal: React.ReactNode
+}
+
+export default function RootLayout({ children, modal }: RootLayoutProps) {
   return (
     <html lang="en">
-      <body className={roboto.className}>{children}</body>
+      <body className={roboto.variable}>
+        <TanStackProvider>
+          <Header />
+          {children}
+          {modal}
+          <Footer />
+        </TanStackProvider>
+      </body>
     </html>
-  );
+  )
 }

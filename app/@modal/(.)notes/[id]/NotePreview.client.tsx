@@ -1,39 +1,46 @@
-"use client";
+'use client'
 
-import css from "./NotePreview.module.css";
-import Modal from "@/components/Modal/Modal";
-import NotePreview from "@/components/NotePreview/NotePreview";
-import { fetchNoteById } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import Modal from '@/components/Modal/Modal'
+import { fetchNoteById } from '@/lib/api/notes'
+import css from '@/components/NotePreview/NotePreview.module.css'
 
-export default function NotePreviewClient() {
-  const router = useRouter();
+interface NotePreviewClientProps {
+  id: string
+}
 
-  const handleClose = () => {
-    router.back();
-  };
-  const { id } = useParams<{ id: string }>();
-
+export default function NotePreviewClient({ id }: NotePreviewClientProps) {
+  const router = useRouter()
   const {
     data: note,
-    isError,
     isLoading,
+    error,
   } = useQuery({
-    queryKey: ["note", id],
+    queryKey: ['note', id],
     queryFn: () => fetchNoteById(id),
+    enabled: Boolean(id),
     refetchOnMount: false,
-  });
+  })
 
   return (
-    <Modal onClose={handleClose}>
-      <button className={css.backBtn} onClick={handleClose}>
-        Close
-      </button>
-      {note && <NotePreview note={note} />}
-      {isError && !note && <p>Something went wrong.</p>}
+    <Modal onClose={() => router.back()}>
       {isLoading && <p>Loading, please wait...</p>}
+      {(error || !note) && !isLoading && <p>Something went wrong.</p>}
+      {note && (
+        <div className={css.container}>
+          <div className={css.item}>
+            <div className={css.header}>
+              <h2>{note.title}</h2>
+            </div>
+            <p className={css.tag}>{note.tag}</p>
+            <p className={css.content}>{note.content}</p>
+            <p className={css.date}>
+              {new Date(note.createdAt).toLocaleDateString('en-GB')}
+            </p>
+          </div>
+        </div>
+      )}
     </Modal>
-  );
+  )
 }

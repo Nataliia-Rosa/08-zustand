@@ -1,5 +1,5 @@
-import SidebarNotes from "@/components/Sidebar/SidebarNotes";
+import SidebarNotes from './SidebarNotes'
 
-export default function filterDefault() {
-  return <SidebarNotes />;
+export default function DefaultSidebar() {
+  return <SidebarNotes />
 }

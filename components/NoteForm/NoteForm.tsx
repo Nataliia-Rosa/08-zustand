@@ -1,107 +1,122 @@
-"use client";
+'use client'
 
-import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-
-type Note = {
-  title: string;
-  content: string;
-  tag: string;
-};
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { useEffect, useState, type ChangeEvent } from 'react'
+import { createNote } from '@/lib/api/notes'
+import { initialDraft, useNoteStore } from '@/lib/store/noteStore'
+import { NOTE_TAGS, type NoteDraft, type NoteTag } from '@/types/note'
+import css from './NoteForm.module.css'
 
 export default function NoteForm() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const draft = useNoteStore((state) => state.draft)
+  const setDraft = useNoteStore((state) => state.setDraft)
+  const clearDraft = useNoteStore((state) => state.clearDraft)
+  const [isHydrated, setIsHydrated] = useState(false)
 
-  const [note, setNote] = useState<Note>({
-    title: "",
-    content: "",
-    tag: "work",
-  });
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
 
-  const mutation = useMutation({
-    mutationFn: async (newNote: Note) => {
-      const res = await fetch("/api/notes", {
-        method: "POST",
-        body: JSON.stringify(newNote),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to create note");
-      }
-
-      return res.json();
-    },
+  const createNoteMutation = useMutation({
+    mutationFn: createNote,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setNote({ title: "", content: "", tag: "work" });
-      router.push("/notes");
+      queryClient.invalidateQueries({ queryKey: ['notes'] })
+      clearDraft()
+      router.back()
     },
-  });
+  })
+
+  const formValues = isHydrated ? draft : initialDraft
 
   const handleChange = (
-    e: React.ChangeEvent<
+    event: ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    >
   ) => {
-    const { name, value } = e.target;
+    const { name, value } = event.target
 
-    setNote((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+    setDraft({ [name]: value } as Partial<NoteDraft>)
+  }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    mutation.mutate(note);
-  };
+  const handleSubmit = async (formData: FormData) => {
+    await createNoteMutation.mutateAsync({
+      title: String(formData.get('title') ?? '').trim(),
+      content: String(formData.get('content') ?? '').trim(),
+      tag: String(formData.get('tag') ?? 'Todo') as NoteTag,
+    })
+  }
 
   const handleCancel = () => {
-    router.push("/notes");
-  };
+    router.back()
+  }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label>Title</label>
+    <form className={css.form}>
+      <div className={css.formGroup}>
+        <label htmlFor="title">Title</label>
         <input
+          id="title"
+          type="text"
           name="title"
-          value={note.title}
-          onChange={handleChange}
+          className={css.input}
+          value={formValues.title}
+          minLength={3}
+          maxLength={50}
           required
+          onChange={handleChange}
         />
       </div>
 
-      <div>
-        <label>Content</label>
+      <div className={css.formGroup}>
+        <label htmlFor="content">Content</label>
         <textarea
+          id="content"
           name="content"
-          value={note.content}
+          rows={8}
+          className={css.textarea}
+          value={formValues.content}
+          maxLength={500}
           onChange={handleChange}
-          required
         />
       </div>
 
-      <div>
-        <label>Tag</label>
-        <select name="tag" value={note.tag} onChange={handleChange}>
-          <option value="work">Work</option>
-          <option value="personal">Personal</option>
-          <option value="study">Study</option>
+      <div className={css.formGroup}>
+        <label htmlFor="tag">Tag</label>
+        <select
+          id="tag"
+          name="tag"
+          className={css.select}
+          value={formValues.tag}
+          onChange={handleChange}
+        >
+          {NOTE_TAGS.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
+            </option>
+          ))}
         </select>
       </div>
 
-      <button type="submit" disabled={mutation.isPending}>
-        Create
-      </button>
-      <button type="button" onClick={handleCancel}>
-        Cancel
-      </button>
+      <div className={css.actions}>
+        <button
+          type="button"
+          className={css.cancelButton}
+          onClick={handleCancel}
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className={css.submitButton}
+          formAction={handleSubmit}
+          disabled={createNoteMutation.isPending}
+        >
+          Create note
+        </button>
+      </div>
     </form>
-  );
+  )
 }

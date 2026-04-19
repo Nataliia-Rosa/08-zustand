@@ -1,7 +1,9 @@
-"use client";
+'use client'
 
-const Error = ({ error }: { error: Error }) => {
-  return <p>Could not fetch the list of notes. {error.message}</p>;
-};
+interface FilterNotesErrorProps {
+  error: Error
+}
 
-export default Error;
+export default function FilterNotesError({ error }: FilterNotesErrorProps) {
+  return <p>Could not fetch the list of notes. {error.message}</p>
+}

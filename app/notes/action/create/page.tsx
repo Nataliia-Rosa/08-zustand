@@ -1,29 +1,29 @@
-import type { Metadata } from "next";
-import NoteForm from "@/components/NoteForm/NoteForm";
+import type { Metadata } from 'next'
+import NoteForm from '@/components/NoteForm/NoteForm'
+import css from './CreateNote.module.css'
 
 export const metadata: Metadata = {
-  title: "Create Note",
-  description: "Create a new note",
+  title: 'Create Note | NoteHub',
+  description: 'Create a new note in NoteHub and save your ideas quickly.',
   openGraph: {
-    title: "Create Note",
-    description: "Create a new note",
-    url: "https://example.com/notes/action/create",
+    title: 'Create Note | NoteHub',
+    description: 'Create a new note in NoteHub and save your ideas quickly.',
+    url: 'https://08-zustand.vercel.app/notes/action/create',
     images: [
       {
-        url: "https://example.com/og-create-note.jpg",
-        width: 1200,
-        height: 630,
-        alt: "Create Note",
+        url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
       },
     ],
   },
-};
+}
 
 export default function CreateNotePage() {
   return (
-    <main>
-      <h1>Create Note</h1>
-      <NoteForm />
+    <main className={css.main}>
+      <div className={css.container}>
+        <h1 className={css.title}>Create note</h1>
+        <NoteForm />
+      </div>
     </main>
-  );
+  )
 }

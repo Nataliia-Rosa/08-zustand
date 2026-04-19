@@ -1,39 +1,36 @@
-import { NoteFilter, type CreateNote } from "@/types/note";
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import type { NoteDraft } from '@/types/note'
 
-interface NoteDraft {
-  noteData: CreateNote;
-  setNoteData: (newNoteData: CreateNote) => void;
-  clearNoteData: () => void;
+export const initialDraft: NoteDraft = {
+  title: '',
+  content: '',
+  tag: 'Todo',
 }
 
-const initialNoteData: CreateNote = {
-  title: "",
-  content: "",
-  tag: NoteFilter.Todo,
-};
+interface NoteStore {
+  draft: NoteDraft
+  setDraft: (note: Partial<NoteDraft>) => void
+  clearDraft: () => void
+}
 
-export const useNoteDraft = create<NoteDraft>()(
+export const useNoteStore = create<NoteStore>()(
   persist(
-    (set) => {
-      return {
-        noteData: initialNoteData,
-        setNoteData: (newNoteData) => {
-          set({
-            noteData: newNoteData,
-          });
-        },
-        clearNoteData: () => {
-          set({
-            noteData: initialNoteData,
-          });
-        },
-      };
-    },
+    (set) => ({
+      draft: initialDraft,
+      setDraft: (note) =>
+        set((state) => ({
+          draft: {
+            ...state.draft,
+            ...note,
+          },
+        })),
+      clearDraft: () => set({ draft: initialDraft }),
+    }),
     {
-      name: "NoteDraft",
-      partialize: (state) => ({ noteData: state.noteData }),
-    },
-  ),
-);
+      name: 'notehub-draft',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ draft: state.draft }),
+    }
+  )
+)

@@ -1,51 +1,56 @@
-import { fetchNoteById } from "@/lib/api";
 import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
-} from "@tanstack/react-query";
-import NoteDetailsClient from "./NoteDetails.client";
-import { Metadata } from "next";
+} from '@tanstack/react-query'
+import type { Metadata } from 'next'
+import { fetchNoteById } from '@/lib/api/notes'
+import NoteDetailsClient from './NoteDetails.client'
+import css from './NoteDetails.module.css'
 
-interface NoteDetailsProps {
-  params: Promise<{ id: string }>;
+interface NoteDetailsPageProps {
+  params: Promise<{
+    id: string
+  }>
 }
 
-export const generateMetadata = async ({
+export default async function NoteDetailsPage({
   params,
-}: NoteDetailsProps): Promise<Metadata> => {
-  const { id } = await params;
-  const { title, content } = await fetchNoteById(id);
-  return {
-    title: `Note - ${title}`,
-    description: content,
-    openGraph: {
-      title: `Note - ${title}`,
-      description: content,
-      url: `${process.env.NEXT_APP_URL}/notes/${id}`,
-      images: [
-        {
-          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
-          alt: "Notehub - A Note-Taking App",
-        },
-      ],
-    },
-  };
-};
+}: NoteDetailsPageProps) {
+  const { id } = await params
+  const queryClient = new QueryClient()
 
-export default async function NoteDetailsPage({ params }: NoteDetailsProps) {
-  const queryClient = new QueryClient();
-  const { id } = await params;
   await queryClient.prefetchQuery({
-    queryKey: ["note", id],
+    queryKey: ['note', id],
     queryFn: () => fetchNoteById(id),
-  });
+  })
 
   return (
-    <div>
+    <main className={css.main}>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <NoteDetailsClient />
       </HydrationBoundary>
-    </div>
-  );
+    </main>
+  )
+}
+
+export async function generateMetadata({
+  params,
+}: NoteDetailsPageProps): Promise<Metadata> {
+  const { id } = await params
+  const note = await fetchNoteById(id)
+  const description =
+    note.content.trim().slice(0, 160) ||
+    `Open the "${note.title}" note in NoteHub.`
+
+  return {
+    title: `${note.title} | NoteHub`,
+    description,
+    openGraph: {
+      title: `${note.title} | NoteHub`,
+      description,
+      url: `/notes/${id}`,
+      images: ['https://ac.goit.global/fullstack/react/notehub-og-meta.jpg'],
+    },
+  }
 }
