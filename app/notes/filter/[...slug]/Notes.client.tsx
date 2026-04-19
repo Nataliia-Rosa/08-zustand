@@ -18,7 +18,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  // debounce працює зі string, а не з event
+  // debounce працює зі string (НЕ event)
   const handleSearch = useDebouncedCallback((value: string) => {
     setSearch(value);
     setPage(1);
@@ -43,13 +43,13 @@ export default function NotesClient({ tag }: NotesClientProps) {
     },
   });
 
+  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleSearch(e.target.value);
+  };
+
   return (
     <div>
-      <SearchBox
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-          handleSearch(e.target.value)
-        }
-      />
+      <SearchBox onChange={onSearchChange} />
 
       <Link href="/notes/create">Create note</Link>
 
@@ -61,7 +61,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
           <NoteList notes={data.notes} />
 
           <Pagination
-            currentPage={page}
+            page={page}
             totalPages={data.totalPages}
             onPageChange={setPage}
           />
