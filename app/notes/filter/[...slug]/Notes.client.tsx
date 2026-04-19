@@ -14,17 +14,16 @@ import { NoResults } from "@/components/NoResults";
 type Props = {
   initialPage?: number;
   initialSearch?: string;
-  initialTag?: string;
+  tag: string;
 };
 
 export default function NotesClient({
   initialPage = 1,
   initialSearch = "",
-  initialTag = "",
+  tag,
 }: Props) {
   const [page, setPage] = useState(initialPage);
   const [search, setSearch] = useState(initialSearch);
-  const [tag, setTag] = useState(initialTag);
 
   const debouncedSetSearch = useDebouncedCallback((value: string) => {
     setPage(1);
@@ -58,7 +57,7 @@ export default function NotesClient({
       <div className="flex items-center justify-between">
         <SearchBox onChange={handleSearchChange} />
         <Link
-          href="/notes/create"
+          href="/notes/action/create"
           className="px-4 py-2 bg-black text-white rounded"
         >
           Створити нотатку
