@@ -1,10 +1,9 @@
 "use client";
 
-type Props = {
-  error: Error;
-  reset: () => void;
-};
+interface FilterNotesErrorProps {
+  error: Error & { digest?: string };
+}
 
-export default function Error({ error }: Props) {
+export default function FilterNotesError({ error }: FilterNotesErrorProps) {
   return <p>Could not fetch the list of notes. {error.message}</p>;
 }

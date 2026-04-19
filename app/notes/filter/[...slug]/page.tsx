@@ -1,61 +1,65 @@
-import {
-  HydrationBoundary,
-  QueryClient,
-  dehydrate,
-} from "@tanstack/react-query";
+import type { Metadata } from "next";
+import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
 import { fetchNotes } from "@/lib/api";
-import NotesClient from "./Notes.client";
-import { NoteTag } from "@/types/note";
-import { Metadata } from "next";
+import type { NoteTag } from "@/types/note";
+import Notes from "./Notes.client";
 
-type Props = {
-  params: Promise<{ slug: string[] }>;
-};
+export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+const PER_PAGE = 12;
+
+interface FilterPageProps {
+  params: Promise<{
+    slug: string[];
+  }>;
+}
+
+export async function generateMetadata({
+  params,
+}: FilterPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const category = slug?.[0] === "all" ? undefined : (slug?.[0] as NoteTag);
-  const title = category ? `NoteHub: ${category}` : "NoteHub: All Notes";
-  const description = category
-    ? `Browse ${category.toLowerCase()} notes in NoteHub.`
-    : "Browse all notes in NoteHub.";
+  const tag = slug?.[0] || "all";
+  const tagName = tag === "all" ? "All Notes" : tag;
+
   return {
-    title,
-    description,
+    title: `NoteHub - ${tagName}`,
+    description: `Browse all notes with tag: ${tagName}`,
     openGraph: {
-      title,
-      description,
-      url: category
-        ? `https://08-zustand-sage-nine.vercel.app/notes/filter/${category}`
-        : "https://08-zustand-sage-nine.vercel.app/notes/filter/all",
-      siteName: "NoteHub",
+      title: `NoteHub - ${tagName}`,
+      description: `Browse all notes with tag: ${tagName}`,
+      url: `https://notehub.vercel.app/notes/filter/${tag}`,
       images: [
         {
           url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
           width: 1200,
           height: 630,
-          alt: "NoteHub app",
+          alt: `NoteHub - ${tagName}`,
         },
       ],
     },
   };
 }
 
-export default async function NotesPage({ params }: Props) {
+export default async function FilterPage({ params }: FilterPageProps) {
   const { slug } = await params;
-  const category = slug?.[0] === "all" ? undefined : (slug?.[0] as NoteTag);
+  const tag = slug?.[0] || "all";
 
   const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
-    queryKey: ["notes", 1, "", category],
+    queryKey: ["notes", 1, "", tag],
     queryFn: () =>
-      fetchNotes({ page: 1, perPage: 12, search: "", tag: category }),
+      fetchNotes({
+        page: 1,
+        perPage: PER_PAGE,
+        search: "",
+        tag: tag && tag !== "all" ? (tag as NoteTag) : undefined,
+      }),
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <NotesClient key={category ?? "all"} category={category} />
+      <Notes tag={tag} />
     </HydrationBoundary>
   );
 }
