@@ -1,15 +1,20 @@
-import css from './LayoutNotes.module.css'
+import { ReactNode } from 'react';
 
 interface FilterLayoutProps {
-  children: React.ReactNode
-  sidebar: React.ReactNode
+  children: ReactNode;
+  sidebar: ReactNode;
 }
 
 export default function FilterLayout({ children, sidebar }: FilterLayoutProps) {
   return (
-    <div className={css.container}>
-      <aside className={css.sidebar}>{sidebar}</aside>
-      <div className={css.notesWrapper}>{children}</div>
+    <div style={{ display: 'flex', gap: '20px' }}>
+      <aside style={{ width: '250px' }}>
+        {sidebar}
+      </aside>
+      <main style={{ flex: 1 }}>
+        {children}
+      </main>
     </div>
-  )
+  );
 }
+

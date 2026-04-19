@@ -1,8 +1,8 @@
-import css from './page.module.css'
+import css from './Home.module.css';
 
-export default function HomePage() {
+export default function Home() {
   return (
-    <main className={css.main}>
+    <main>
       <div className={css.container}>
         <h1 className={css.title}>Welcome to NoteHub</h1>
         <p className={css.description}>
@@ -18,5 +18,5 @@ export default function HomePage() {
         </p>
       </div>
     </main>
-  )
+  );
 }

@@ -2,73 +2,48 @@ import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
-} from '@tanstack/react-query'
-import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
-import { fetchNotes } from '@/lib/api/notes'
-import { NOTE_TAGS, type NoteTag } from '@/types/note'
-import NotesClient from './Notes.client'
+} from "@tanstack/react-query";
+import { fetchNotes } from "../../../../lib/api";
+import NotesClient from "./Notes.client";
 
-const PER_PAGE = 12
-
-interface FilterNotesPageProps {
-  params: Promise<{
-    slug: string[]
-  }>
+interface FilterPageProps {
+  params: Promise<{ slug: string[] }>;
 }
 
-const getTagFromSlug = (slug: string[]): NoteTag | undefined => {
-  if (slug.length !== 1) {
-    notFound()
-  }
+export async function generateMetadata({ params }: FilterPageProps) {
+  const { slug } = await params;
+  const tag = slug && slug[0] !== "all" ? slug[0] : 'All';
 
-  const [tag] = slug
-
-  if (tag === 'all') {
-    return undefined
-  }
-
-  if (NOTE_TAGS.includes(tag as NoteTag)) {
-    return tag as NoteTag
-  }
-
-  notFound()
+  return {
+    title: `Notes - ${tag} | NoteHub`,
+    description: `Browse notes filtered by ${tag} in NoteHub`,
+    openGraph: {
+      title: `Notes - ${tag} | NoteHub`,
+      description: `Browse notes filtered by ${tag} in NoteHub`,
+      url: `https://example.com/notes/filter/${slug ? slug.join('/') : 'all'}`,
+      images: [
+        {
+          url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+        },
+      ],
+    },
+  };
 }
 
-export default async function FilterNotesPage({
-  params,
-}: FilterNotesPageProps) {
-  const { slug } = await params
-  const tag = getTagFromSlug(slug)
-  const queryClient = new QueryClient()
+export default async function FilterPage({ params }: FilterPageProps) {
+  const { slug: slugParams } = await params;
+  const tag = slugParams && slugParams[0] !== "all" ? slugParams[0] : undefined;
+
+  const queryClient = new QueryClient();
 
   await queryClient.prefetchQuery({
-    queryKey: ['notes', 1, '', tag ?? 'all'],
-    queryFn: () => fetchNotes({ page: 1, perPage: PER_PAGE, search: '', tag }),
-  })
+    queryKey: ["notes", "", 1, tag],
+    queryFn: () => fetchNotes({ search: "", page: 1, perPage: 12, tag }),
+  });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
       <NotesClient tag={tag} />
     </HydrationBoundary>
-  )
-}
-
-export async function generateMetadata({
-  params,
-}: FilterNotesPageProps): Promise<Metadata> {
-  const { slug } = await params
-  const tag = getTagFromSlug(slug)
-  const selectedFilter = tag ?? 'All'
-
-  return {
-    title: `${selectedFilter} Notes | NoteHub`,
-    description: `Browse NoteHub notes filtered by ${selectedFilter}.`,
-    openGraph: {
-      title: `${selectedFilter} Notes | NoteHub`,
-      description: `Browse NoteHub notes filtered by ${selectedFilter}.`,
-      url: `/notes/filter/${tag ?? 'all'}`,
-      images: ['https://ac.goit.global/fullstack/react/notehub-og-meta.jpg'],
-    },
-  }
+  );
 }

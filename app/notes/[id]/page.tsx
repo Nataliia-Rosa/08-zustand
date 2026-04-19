@@ -2,55 +2,62 @@ import {
   dehydrate,
   HydrationBoundary,
   QueryClient,
-} from '@tanstack/react-query'
-import type { Metadata } from 'next'
-import { fetchNoteById } from '@/lib/api/notes'
-import NoteDetailsClient from './NoteDetails.client'
-import css from './NoteDetails.module.css'
+} from "@tanstack/react-query";
+import { fetchNoteById } from "../../../lib/api";
+import NoteDetailsClient from "./NoteDetails.client";
 
-interface NoteDetailsPageProps {
-  params: Promise<{
-    id: string
-  }>
+interface PageProps {
+  params: Promise<{ id: string }>;
 }
 
-export default async function NoteDetailsPage({
-  params,
-}: NoteDetailsPageProps) {
-  const { id } = await params
-  const queryClient = new QueryClient()
+export async function generateMetadata({ params }: PageProps) {
+  const { id } = await params;
+  try {
+    const note = await fetchNoteById(id);
+    return {
+      title: `${note.title} | NoteHub`,
+      description: note.content.substring(0, 150),
+      openGraph: {
+        title: `${note.title} | NoteHub`,
+        description: note.content.substring(0, 150),
+        url: `https://example.com/notes/${id}`,
+        images: [
+          {
+            url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+          },
+        ],
+      },
+    };
+  } catch (error) {
+    return {
+      title: `Note ${id} | NoteHub`,
+      description: `Details for note ${id}`,
+      openGraph: {
+        title: `Note ${id} | NoteHub`,
+        description: `Details for note ${id}`,
+        url: `https://example.com/notes/${id}`,
+        images: [
+          {
+            url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+          },
+        ],
+      },
+    };
+  }
+}
+
+export default async function NoteDetailsPage({ params }: PageProps) {
+  const queryClient = new QueryClient();
+  const { id } = await params;
 
   await queryClient.prefetchQuery({
-    queryKey: ['note', id],
+    queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
-  })
+  });
 
   return (
-    <main className={css.main}>
-      <HydrationBoundary state={dehydrate(queryClient)}>
-        <NoteDetailsClient />
-      </HydrationBoundary>
-    </main>
-  )
-}
-
-export async function generateMetadata({
-  params,
-}: NoteDetailsPageProps): Promise<Metadata> {
-  const { id } = await params
-  const note = await fetchNoteById(id)
-  const description =
-    note.content.trim().slice(0, 160) ||
-    `Open the "${note.title}" note in NoteHub.`
-
-  return {
-    title: `${note.title} | NoteHub`,
-    description,
-    openGraph: {
-      title: `${note.title} | NoteHub`,
-      description,
-      url: `/notes/${id}`,
-      images: ['https://ac.goit.global/fullstack/react/notehub-og-meta.jpg'],
-    },
-  }
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <NoteDetailsClient />
+    </HydrationBoundary>
+  );
 }
