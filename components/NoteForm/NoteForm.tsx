@@ -1,90 +1,107 @@
 "use client";
 
-import css from "./NoteForm.module.css";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { NoteFilter } from "@/types/note";
-import { createNote } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import { useNoteDraft } from "@/lib/store/noteStore";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+
+type Note = {
+  title: string;
+  content: string;
+  tag: string;
+};
 
 export default function NoteForm() {
-  const { noteData, setNoteData, clearNoteData } = useNoteDraft();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const { mutate } = useMutation({
-    mutationFn: createNote,
+
+  const [note, setNote] = useState<Note>({
+    title: "",
+    content: "",
+    tag: "work",
+  });
+
+  const mutation = useMutation({
+    mutationFn: async (newNote: Note) => {
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        body: JSON.stringify(newNote),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create note");
+      }
+
+      return res.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      clearNoteData();
-      router.push("/notes/filter/all");
+      setNote({ title: "", content: "", tag: "work" });
+      router.push("/notes");
     },
   });
 
-  const router = useRouter();
-
-  const handleSubmit = () => {
-    mutate({ ...noteData });
-  };
-
-  const onChangeData = (
-    event: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
     >,
   ) => {
-    const inputValue = event.target.value;
-    setNoteData({ ...noteData, [event.target.name]: inputValue });
+    const { name, value } = e.target;
+
+    setNote((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    mutation.mutate(note);
+  };
+
+  const handleCancel = () => {
+    router.push("/notes");
   };
 
   return (
-    <form action={handleSubmit} className={css.form}>
-      <label className={css.formGroup}>
-        Title
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label>Title</label>
         <input
-          onChange={onChangeData}
-          className={css.input}
-          type="text"
           name="title"
-          value={noteData.title}
+          value={note.title}
+          onChange={handleChange}
+          required
         />
-      </label>
-
-      <label className={css.formGroup}>
-        Content
-        <textarea
-          onChange={onChangeData}
-          className={css.textarea}
-          name="content"
-          value={noteData.content}
-        ></textarea>
-      </label>
-
-      <label className={css.formGroup}>
-        Tag
-        <select
-          onChange={onChangeData}
-          className={css.select}
-          name="tag"
-          defaultValue={noteData.tag}
-        >
-          <option value={NoteFilter.Todo}>Todo</option>
-          <option value={NoteFilter.Work}>Work</option>
-          <option value={NoteFilter.Personal}>Personal</option>
-          <option value={NoteFilter.Meeting}>Meeting</option>
-          <option value={NoteFilter.Shopping}>Shopping</option>
-        </select>
-      </label>
-
-      <div className={css.actions}>
-        <button
-          className={css.cancelButton}
-          type="button"
-          onClick={() => router.back()}
-        >
-          Cancel
-        </button>
-        <button className={css.submitButton} type="submit">
-          Create note
-        </button>
       </div>
+
+      <div>
+        <label>Content</label>
+        <textarea
+          name="content"
+          value={note.content}
+          onChange={handleChange}
+          required
+        />
+      </div>
+
+      <div>
+        <label>Tag</label>
+        <select name="tag" value={note.tag} onChange={handleChange}>
+          <option value="work">Work</option>
+          <option value="personal">Personal</option>
+          <option value="study">Study</option>
+        </select>
+      </div>
+
+      <button type="submit" disabled={mutation.isPending}>
+        Create
+      </button>
+      <button type="button" onClick={handleCancel}>
+        Cancel
+      </button>
     </form>
   );
 }
