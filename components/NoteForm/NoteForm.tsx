@@ -1,102 +1,140 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createNote } from "../../lib/api";
-import { useNoteStore } from "../../lib/store/noteStore";
-import type { NoteTag } from "../../types/note";
 import css from "./NoteForm.module.css";
-import toast from "react-hot-toast";
-import { useEffect, useState } from "react";
+import { noteTags, type NoteTag } from "../../types/note";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createNote } from "@/lib/api";
+import * as Yup from "yup";
+import { useId, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useNoteDraftStore } from "@/lib/store/noteStore";
+
+interface NoteFormValues {
+  title: string;
+  content: string;
+  tag: NoteTag;
+}
+
+type NoteFormErrors = Partial<Record<keyof NoteFormValues, string>>;
+
+const Schema = Yup.object().shape({
+  title: Yup.string().min(3).max(50).required(),
+  content: Yup.string().max(500),
+  tag: Yup.string().oneOf(noteTags).required(),
+});
 
 export default function NoteForm() {
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const { draft, setDraft, clearDraft } = useNoteStore();
-  const [mounted, setMounted] = useState(false);
+  const router = useRouter();
+  const id = useId();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [errors, setErrors] = useState<NoteFormErrors>({});
+  const { draft, setDraft, clearDraft } = useNoteDraftStore();
 
-  const mutation = useMutation({
+  const handleChange = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
+    setDraft({
+      ...draft,
+      [event.target.name]: event.target.value,
+    });
+  };
+
+  const { mutate, isPending } = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      toast.success("Note created!");
       clearDraft();
       router.back();
     },
-    onError: () => {
-      toast.error("Failed to create note");
-    },
   });
 
-  const handleSubmit = (formData: FormData) => {
-    const title = formData.get("title") as string;
-    const content = formData.get("content") as string;
-    const tag = formData.get("tag") as NoteTag;
+  const handleCancel = () => router.back();
 
-    if (!title || title.length < 3) {
-      toast.error("Title must be at least 3 characters");
-      return;
+  const handleSubmit = async (formData: FormData) => {
+    const rawTitle = formData.get("title");
+    const rawContent = formData.get("content");
+    const rawTag = formData.get("tag");
+
+    const values = {
+      title: typeof rawTitle === "string" ? rawTitle.trim() : "",
+      content: typeof rawContent === "string" ? rawContent.trim() : "",
+      tag: typeof rawTag === "string" ? rawTag : "",
+    };
+
+    try {
+      const validatedValues = await Schema.validate(values, {
+        abortEarly: false,
+      });
+
+      setErrors({});
+
+      mutate({
+        title: validatedValues.title,
+        content: validatedValues.content ?? "",
+        tag: validatedValues.tag as NoteTag,
+      });
+    } catch (error) {
+      if (error instanceof Yup.ValidationError) {
+        const nextErrors: NoteFormErrors = {};
+
+        error.inner.forEach((err) => {
+          if (err.path && !nextErrors[err.path as keyof NoteFormValues]) {
+            nextErrors[err.path as keyof NoteFormValues] = err.message;
+          }
+        });
+
+        setErrors(nextErrors);
+      }
     }
-
-    mutation.mutate({ title, content, tag });
   };
-
-  const handleCancel = () => {
-    router.back();
-  };
-
-  if (!mounted) return null;
 
   return (
-    <form action={handleSubmit} className={css.form}>
+    <form className={css.form}>
       <div className={css.formGroup}>
-        <label htmlFor="title">Title</label>
+        <label htmlFor={`${id}-title`}>Title</label>
         <input
-          id="title"
+          id={`${id}-title`}
           type="text"
           name="title"
           className={css.input}
-          value={draft.title}
-          onChange={(e) => setDraft({ title: e.target.value })}
-          required
-          minLength={3}
-          maxLength={50}
+          value={draft?.title}
+          onChange={handleChange}
         />
+        {errors.title && <span className={css.error}>{errors.title}</span>}
       </div>
 
       <div className={css.formGroup}>
-        <label htmlFor="content">Content</label>
+        <label htmlFor={`${id}-content`}>Content</label>
         <textarea
-          id="content"
+          id={`${id}-content`}
           name="content"
           rows={8}
           className={css.textarea}
-          value={draft.content}
-          onChange={(e) => setDraft({ content: e.target.value })}
-          maxLength={500}
+          value={draft?.content}
+          onChange={handleChange}
         />
+        {errors.content && <span className={css.error}>{errors.content}</span>}
       </div>
 
       <div className={css.formGroup}>
-        <label htmlFor="tag">Tag</label>
+        <label htmlFor={`${id}-tag`}>Tag</label>
         <select
-          id="tag"
+          id={`${id}-tag`}
           name="tag"
           className={css.select}
-          value={draft.tag}
-          onChange={(e) => setDraft({ tag: e.target.value as NoteTag })}
-          required
+          value={draft?.tag}
+          onChange={handleChange}
         >
-          <option value="Todo">Todo</option>
-          <option value="Work">Work</option>
-          <option value="Personal">Personal</option>
-          <option value="Meeting">Meeting</option>
-          <option value="Shopping">Shopping</option>
+          {noteTags.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
+            </option>
+          ))}
         </select>
+        {errors.tag && <span className={css.error}>{errors.tag}</span>}
       </div>
 
       <div className={css.actions}>
@@ -104,16 +142,16 @@ export default function NoteForm() {
           type="button"
           className={css.cancelButton}
           onClick={handleCancel}
-          disabled={mutation.isPending}
         >
           Cancel
         </button>
         <button
           type="submit"
           className={css.submitButton}
-          disabled={mutation.isPending}
+          disabled={isPending}
+          formAction={handleSubmit}
         >
-          Create note
+          {isPending ? "Creating..." : "Create note"}
         </button>
       </div>
     </form>

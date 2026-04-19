@@ -1,32 +1,33 @@
-import { ReactNode } from "react";
-import TanStackProvider from "../components/TanStackProvider/TanStackProvider";
-import Header from "../components/Header/Header";
-import Footer from "../components/Footer/Footer";
-import "./globals.css";
-import { Toaster } from "react-hot-toast";
+import type { Metadata } from "next";
 import { Roboto } from "next/font/google";
-import { Metadata } from "next";
+import "./globals.css";
+import Header from "@/components/Header/Header";
+import Footer from "@/components/Footer/Footer";
+import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
 
 const roboto = Roboto({
-  weight: ["400", "500", "700"],
   subsets: ["latin"],
-  display: "swap",
+  weight: ["400", "700"],
   variable: "--font-roboto",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "NoteHub",
-  description: "NoteHub - Personal notes management",
+  description:
+    "A note management app with tag filtering, search, pagination and modal navigation.",
   openGraph: {
     title: "NoteHub",
-    description: "NoteHub - Personal notes management",
-    url: "https://notehub.com", // Replace with actual URL if known
+    description:
+      "A note management app with tag filtering, search, pagination and modal navigation.",
+    url: "https://08-zustand-sage-nine.vercel.app",
+    siteName: "NoteHub",
     images: [
       {
         url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
         width: 1200,
         height: 630,
-        alt: "NoteHub Open Graph Image",
+        alt: "NoteHub app",
       },
     ],
   },
@@ -35,21 +36,20 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
   modal,
-}: {
-  children: ReactNode;
-  modal: ReactNode;
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+  modal: React.ReactNode;
+}>) {
   return (
-    <html lang="en" className={roboto.variable}>
-      <body>
-        <TanStackProvider>
+    <html lang="en">
+      <TanStackProvider>
+        <body className={roboto.variable}>
           <Header />
           {children}
           {modal}
           <Footer />
-          <Toaster />
-        </TanStackProvider>
-      </body>
+        </body>
+      </TanStackProvider>
     </html>
   );
 }

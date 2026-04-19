@@ -17,16 +17,15 @@
 }
 
 .button {
-  display: inline-block;
   padding: 6px 12px;
   font-size: 16px;
   color: #fff;
   background-color: #0d6efd;
   border: none;
   border-radius: 4px;
-  text-decoration: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  text-decoration: none;
 }
 
 .button:hover {

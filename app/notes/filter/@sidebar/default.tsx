@@ -1,27 +1,22 @@
-import React from "react";
+import css from "./SidebarNotes.module.css";
 import Link from "next/link";
-import css from "../SidebarNotes.module.css";
-import type { NoteTag } from "../../../../types/note";
+import { noteTags } from "@/types/note";
 
-const TAGS: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
-
-export default function SidebarPage() {
+export default async function SidebarNotes() {
   return (
-    <aside>
-      <ul className={css.menuList}>
-        <li className={css.menuItem}>
-          <Link href="/notes/filter/all" className={css.menuLink}>
-            All notes
+    <ul className={css.menuList}>
+      <li className={css.menuItem}>
+        <Link href={`/notes/filter/all`} className={css.menuLink}>
+          All notes
+        </Link>
+      </li>
+      {noteTags.map((noteTag) => (
+        <li className={css.menuItem} key={noteTag}>
+          <Link href={`/notes/filter/${noteTag}`} className={css.menuLink}>
+            {noteTag}
           </Link>
         </li>
-        {TAGS.map((tag) => (
-          <li key={tag} className={css.menuItem}>
-            <Link href={`/notes/filter/${tag}`} className={css.menuLink}>
-              {tag}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </aside>
+      ))}
+    </ul>
   );
 }

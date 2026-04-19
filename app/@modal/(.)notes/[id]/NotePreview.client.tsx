@@ -1,44 +1,41 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { fetchNoteById } from "../../../../lib/api";
-import { useRouter } from "next/navigation";
-import Loader from "../../../../components/Loader/Loader";
-import Modal from "../../../../components/Modal/Modal";
+import { useParams, useRouter } from "next/navigation";
+import { fetchNoteById } from "@/lib/api";
+import css from "./NotePreview.module.css";
+import Modal from "@/components/Modal/Modal";
 
-interface NotePreviewProps {
-  id: string;
-}
-
-export default function NotePreview({ id }: NotePreviewProps) {
+export default function NotePreview() {
   const router = useRouter();
-  
-  const { data: note, isLoading, error } = useQuery({
+  const close = () => router.back();
+
+  const { id } = useParams<{ id: string }>();
+
+  const { data, isLoading, error } = useQuery({
     queryKey: ["note", id],
     queryFn: () => fetchNoteById(id),
     refetchOnMount: false,
   });
 
-  const handleClose = () => {
-    router.back();
-  };
+  if (isLoading) return <p>Loading, please wait...</p>;
+
+  if (error || !data) return <p>Something went wrong.</p>;
 
   return (
-    <Modal onClose={handleClose}>
-      <button onClick={handleClose}>
-        Close
-      </button>
-
-      {isLoading && <Loader />}
-      {error && <p>Failed to load note details.</p>}
-      
-      {note && (
-        <div>
-          <h2>{note.title}</h2>
-          <p>{note.content}</p>
-          <hr />
-          <p>Tag: {note.tag}</p>
-          <p>Created at: {new Date(note.createdAt).toLocaleString()}</p>
+    <Modal onClose={close}>
+      {isLoading && <p>Loading, please wait...</p>}
+      {(error || !data) && <p>Something went wrong.</p>}
+      {data && (
+        <div className={css.container}>
+          <div className={css.item}>
+            <div className={css.header}>
+              <h2>{data.title}</h2>
+            </div>
+            <p className={css.tag}>{data.tag}</p>
+            <p className={css.content}>{data.content}</p>
+            <p className={css.date}>{data.createdAt}</p>
+          </div>
         </div>
       )}
     </Modal>
