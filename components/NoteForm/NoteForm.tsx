@@ -1,114 +1,90 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import css from "./NoteForm.module.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-
-type Note = {
-  title: string;
-  content: string;
-  tag: string;
-};
-
-async function createNote(note: Note) {
-  const res = await fetch("/api/notes", {
-    method: "POST",
-    body: JSON.stringify(note),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to create note");
-  }
-
-  return res.json();
-}
+import { NoteFilter } from "@/types/note";
+import { createNote } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useNoteDraft } from "@/lib/store/noteStore";
 
 export default function NoteForm() {
-  const router = useRouter();
+  const { noteData, setNoteData, clearNoteData } = useNoteDraft();
   const queryClient = useQueryClient();
-
-  const [form, setForm] = useState<Note>({
-    title: "",
-    content: "",
-    tag: "work",
-  });
-
-  const mutation = useMutation({
+  const { mutate } = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setForm({ title: "", content: "", tag: "work" });
-      router.push("/notes");
+      clearNoteData();
+      router.push("/notes/filter/all");
     },
   });
 
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+  const router = useRouter();
+
+  const handleSubmit = () => {
+    mutate({ ...noteData });
+  };
+
+  const onChangeData = (
+    event: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    mutation.mutate(form);
-  };
-
-  const handleCancel = () => {
-    router.push("/notes");
+    const inputValue = event.target.value;
+    setNoteData({ ...noteData, [event.target.name]: inputValue });
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="title">Title</label>
+    <form action={handleSubmit} className={css.form}>
+      <label className={css.formGroup}>
+        Title
         <input
-          id="title"
-          name="title"
+          onChange={onChangeData}
+          className={css.input}
           type="text"
-          value={form.title}
-          onChange={handleChange}
-          required
+          name="title"
+          value={noteData.title}
         />
-      </div>
+      </label>
 
-      <div>
-        <label htmlFor="content">Content</label>
+      <label className={css.formGroup}>
+        Content
         <textarea
-          id="content"
+          onChange={onChangeData}
+          className={css.textarea}
           name="content"
-          value={form.content}
-          onChange={handleChange}
-          required
-        />
-      </div>
+          value={noteData.content}
+        ></textarea>
+      </label>
 
-      <div>
-        <label htmlFor="tag">Tag</label>
-        <select id="tag" name="tag" value={form.tag} onChange={handleChange}>
-          <option value="work">Work</option>
-          <option value="personal">Personal</option>
-          <option value="other">Other</option>
+      <label className={css.formGroup}>
+        Tag
+        <select
+          onChange={onChangeData}
+          className={css.select}
+          name="tag"
+          defaultValue={noteData.tag}
+        >
+          <option value={NoteFilter.Todo}>Todo</option>
+          <option value={NoteFilter.Work}>Work</option>
+          <option value={NoteFilter.Personal}>Personal</option>
+          <option value={NoteFilter.Meeting}>Meeting</option>
+          <option value={NoteFilter.Shopping}>Shopping</option>
         </select>
+      </label>
+
+      <div className={css.actions}>
+        <button
+          className={css.cancelButton}
+          type="button"
+          onClick={() => router.back()}
+        >
+          Cancel
+        </button>
+        <button className={css.submitButton} type="submit">
+          Create note
+        </button>
       </div>
-
-      <button type="submit" disabled={mutation.isPending}>
-        {mutation.isPending ? "Creating..." : "Create"}
-      </button>
-
-      <button type="button" onClick={handleCancel}>
-        Cancel
-      </button>
-
-      {mutation.isError && <p>Error creating note</p>}
     </form>
   );
 }
