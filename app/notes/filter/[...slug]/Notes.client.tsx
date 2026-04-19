@@ -1,63 +1,86 @@
 "use client";
 
 import { useState } from "react";
-import { fetchNotes } from "@/lib/api";
-import NoteList from "@/components/NoteList/NoteList";
-import css from "./NotesPage.module.css";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import Pagination from "@/components/Pagination/Pagination";
-import SearchBox from "@/components/SearchBox/SearchBox";
+import { useQuery } from "@tanstack/react-query";
 import { useDebouncedCallback } from "use-debounce";
-import NoResults from "@/components/NoResults/NoResults";
-import { NoteTag } from "@/types/note";
 import Link from "next/link";
 
-interface NotesClientProps {
-  category?: NoteTag;
-}
+import { getNotes } from "@/api/notes";
+import { SearchBox } from "@/components/SearchBox";
+import { NoteList } from "@/components/NoteList";
+import { Pagination } from "@/components/Pagination";
+import { NoResults } from "@/components/NoResults";
 
-export default function NotesClient({ category }: NotesClientProps) {
-  const [page, setPage] = useState(1);
+type Props = {
+  initialPage?: number;
+  initialSearch?: string;
+  initialTag?: string;
+};
 
-  const [searchQuery, setSearchQuery] = useState("");
+export default function NotesClient({
+  initialPage = 1,
+  initialSearch = "",
+  initialTag = "",
+}: Props) {
+  const [page, setPage] = useState(initialPage);
+  const [search, setSearch] = useState(initialSearch);
+  const [tag, setTag] = useState(initialTag);
 
-  const { data, error, isError } = useQuery({
-    queryKey: ["notes", page, searchQuery, category],
+  const debouncedSetSearch = useDebouncedCallback((value: string) => {
+    setPage(1);
+    setSearch(value);
+  }, 300);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSetSearch(e.target.value);
+  };
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["notes", page, search, tag],
     queryFn: () =>
-      fetchNotes({ page, perPage: 12, search: searchQuery, tag: category }),
-    placeholderData: keepPreviousData,
-    refetchOnMount: false,
+      getNotes({
+        page,
+        search,
+        tag,
+      }),
+    keepPreviousData: true,
   });
-  if (isError) throw error;
 
-  const updateSearchQuery = useDebouncedCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchQuery(event.target.value);
-      setPage(1);
-    },
-    400,
-  );
+  const notes = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
-  const notes = data?.notes ?? [];
-  const totalPages = data?.totalPages ?? 0;
+  if (isError) {
+    return <div>Помилка завантаження нотаток</div>;
+  }
 
   return (
-    <div className={css.app}>
-      <header className={css.toolbar}>
-        <SearchBox onChange={updateSearchQuery} />
-        {totalPages > 1 && (
-          <Pagination
-            page={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
-        )}
-        <Link href="/notes/action/create" className={css.button}>
-          Create note +
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <SearchBox onChange={handleSearchChange} />
+        <Link
+          href="/notes/create"
+          className="px-4 py-2 bg-black text-white rounded"
+        >
+          Створити нотатку
         </Link>
-      </header>
-      {data && data.notes.length === 0 && <NoResults />}
-      {notes.length > 0 && <NoteList notes={notes} />}
+      </div>
+
+      {isLoading ? (
+        <div>Завантаження...</div>
+      ) : notes.length === 0 ? (
+        <NoResults />
+      ) : (
+        <NoteList notes={notes} />
+      )}
+
+      {totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onNext={() => setPage((p) => p + 1)}
+          onPrev={() => setPage((p) => p - 1)}
+        />
+      )}
     </div>
   );
 }
